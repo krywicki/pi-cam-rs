@@ -54,3 +54,11 @@ fn main() -> Result<()> {
     // }
     Ok(())
 }
+
+#[derive(Debug)]
+pub enum Codec {
+    MJPG,
+    XVID,
+    MP4V,
+    H264,
+}
