@@ -63,12 +63,12 @@ exit_msg()
 
 welcome_msg()
 {
-  COLOR1="$RED"
-  COLOR2="$RED"
-  COLOR3="$YELLOW"
-  COLOR4="$BLUE"
-  COLOR5="$BLUE"
-  COLOR6="$BLUE"
+  local COLOR1="$RED"
+  local COLOR2="$RED"
+  local COLOR3="$YELLOW"
+  local COLOR4="$BLUE"
+  local COLOR5="$BLUE"
+  local COLOR6="$BLUE"
 
   printf "$COLOR1██████╗ ██╗       ██████╗ █████╗ ███╗   ███╗      ██████╗ ███████╗\n"
   printf "$COLOR2██╔══██╗██║      ██╔════╝██╔══██╗████╗ ████║      ██╔══██╗██╔════╝\n"
