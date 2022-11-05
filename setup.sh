@@ -13,6 +13,8 @@ SWAP_FILE=/etc/dphys-swapfile
 # Platform architecture
 ARCH=$(uname -m)
 
+OPENCV_VER="4.6.0"
+
 do_print_welcome=true
 do_update=false
 do_ask_reboot=true
@@ -172,24 +174,34 @@ sudo apt-get install -y \
   libgflags-dev \
   protobuf-compiler
 
-# Download OpenCV 4.6.0. https://github.com/opencv/opencv/tree/4.6.0
-wget -O opencv.zip https://github.com/opencv/opencv/archive/4.6.0.zip
-wget -O opencv_contrib.zip https://github.com/opencv/opencv_contrib/archive/4.6.0.zip
-# unzip downloaded files
-unzip opencv.zip
-unzip opencv_contrib.zip
-# rename directories for convenience
-mv opencv-4.6.0 opencv
-mv opencv_contrib-4.6.0 opencv_contrib
-# remove the zip files
-rm opencv.zip
-rm opencv_contrib.zip
+# Download OpenCV
+if [ ! -d "opencv" ]; then
+  printf "$GREEN==> Downloading OpenCV $OPENCV_VER...$NORM\n"
+  wget -O opencv.zip https://github.com/opencv/opencv/archive/$OPENCV_VER.zip
+  unzip opencv.zip
+  mv opencv-$OPENCV_VER opencv
+  rm opencv.zip
+else
+  printf "$GREEN==> OpenCV $OPENCV_VER already downloaded. Skipping.$NORM\n"
+fi
+
+# Dowload OpenCV Contrib
+if [ ! -d "opencv_contrib" ]; then
+  printf "$GREEN==> Downloading OpenCV Contrib $OPENCV_VER...$NORM\n"
+  wget -O opencv_contrib.zip https://github.com/opencv/opencv_contrib/archive/$OPENCV_VER.zip
+  unzip opencv_contrib.zip
+  mv opencv_contrib-$OPENCV_VER opencv_contrib
+  rm opencv_contrib.zip
+else
+  printf "$GREEN==> OpenCV Contrib $OPENCV_VER already downloaded. Skipping.$NORM\n"
+fi
+
 # create the build directory
 CWD=$(pwd)
-cd opencv && mkdir build && cd build
+cd opencv && mkdir -p build && cd build
 
 # Compile OpenCV 4.6.0.
-printf "$GREEN==> Compiling OpenCV v4.6.0...$NORM\n"
+printf "$GREEN==> Compiling OpenCV v$OPENCV_VER...$NORM\n"
 # run cmake
 cmake \
 -DCMAKE_BUILD_TYPE=RELEASE \
@@ -247,11 +259,6 @@ sudo ldconfig
 
 # changing cwd back to $HOME
 cd $CWD
-
-# Remove opencv source directories.
-# printf "$GREEN==> Removing OpenCV files...$NORM\n"
-#rm -rf $HOME/opencv
-#rm -rf $HOME/opencv_contrib
 
 # Install rustup if cargo isn't on system.
 command -v cargo > /dev/null || {

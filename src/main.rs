@@ -1,6 +1,6 @@
 use opencv::{
-    core::{GpuMat, Vector},
-    highgui, imgcodecs,
+    core::Vector,
+    imgcodecs,
     prelude::*,
     videoio::{self, VideoCaptureProperties as VCProps, VideoCaptureTrait},
     Result,
@@ -40,12 +40,6 @@ fn main() -> Result<()> {
 
     let im_params: Vector<i32> = Vector::default();
     imgcodecs::imwrite("frame.jpeg", &frame, &im_params)?;
-
-    // read gpu frame & make jpeg
-    let mut gpu_frame = GpuMat::default()?;
-    cam.read(&mut gpu_frame)?;
-
-    imgcodecs::imwrite("gpu_frame.jpeg", &gpu_frame, &im_params)?;
 
     // loop {
     // 	let mut frame = Mat::default();
