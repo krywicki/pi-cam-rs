@@ -1,0 +1,7 @@
+{
+    "files.watcherExclude": {
+        "opencv_contrib/**": true,
+        "opencv/**": true,
+        "target/**": true
+    }
+}
