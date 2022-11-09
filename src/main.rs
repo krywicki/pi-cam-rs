@@ -1,10 +1,12 @@
 use opencv::{
-    core::Vector,
-    imgcodecs,
+    core::{Size, Vector},
+    dnn, imgcodecs,
     prelude::*,
-    videoio::{self, VideoCaptureProperties as VCProps, VideoCaptureTrait},
+    videoio::{self, VideoCaptureProperties as VCProps, VideoCaptureTrait, VideoWriterTrait},
     Result,
 };
+
+use chrono::Utc;
 
 fn main() -> Result<()> {
     // let window = "video capture";
@@ -33,25 +35,35 @@ fn main() -> Result<()> {
         panic!("Unable to open default camera!");
     }
 
-    // read frame & make jpeg
+    // frame
     let mut frame = Mat::default();
 
-    cam.read(&mut frame)?;
+    //video writer
+    let mut vw = videoio::VideoWriter::new(
+        &"video.mp4",
+        //fourcc(Codec::MP4V)?,
+        videoio::VideoWriter::fourcc('m', 'p', '4', 'v')?,
+        cam.get(videoio::CAP_PROP_FPS)?,
+        Size::new(
+            cam.get(videoio::CAP_PROP_FRAME_WIDTH)? as i32,
+            cam.get(videoio::CAP_PROP_FRAME_HEIGHT)? as i32,
+        ),
+        true,
+    )?;
 
-    let im_params: Vector<i32> = Vector::default();
-    imgcodecs::imwrite("frame.jpeg", &frame, &im_params)?;
+    let start_time = Utc::now().time();
 
-    // loop {
-    // 	let mut frame = Mat::default();
-    // 	cam.read(&mut frame)?;
-    // 	if frame.size()?.width > 0 {
-    // 		highgui::imshow(window, &mut frame)?;
-    // 	}
-    // 	let key = highgui::wait_key(10)?;
-    // 	if key > 0 && key != 255 {
-    // 		break;
-    // 	}
-    // }
+    loop {
+        cam.read(&mut frame)?;
+        vw.write(&frame)?;
+
+        let duration = Utc::now().time() - start_time;
+        if duration.num_seconds() >= 10 {
+            vw.release().expect("failed to release videowriter");
+            break;
+        }
+    }
+
     Ok(())
 }
 
@@ -61,4 +73,13 @@ pub enum Codec {
     XVID,
     MP4V,
     H264,
+}
+
+fn fourcc(codec: Codec) -> Result<i32> {
+    match codec {
+        Codec::H264 => videoio::VideoWriter::fourcc('h', '2', '6', '4'),
+        Codec::XVID => videoio::VideoWriter::fourcc('x', 'v', 'i', 'd'),
+        Codec::MP4V => videoio::VideoWriter::fourcc('m', 'p', '4', 'v'),
+        Codec::MJPG => videoio::VideoWriter::fourcc('m', 'j', 'p', 'g'),
+    }
 }
