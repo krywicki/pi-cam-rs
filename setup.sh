@@ -1,4 +1,12 @@
 #!/bin/bash
+#
+# Useful raspi-config cli non-interactive commands docs
+#   - raspi-config shell functions
+#     - https://github.com/RPi-Distro/raspi-config/blob/master/raspi-config
+#   - raspi-config ui references to raspi-config nonint commands
+#     - https://github.com/raspberrypi-ui/rc_gui/blob/89c774e7fa2621a7a13efd82ccd204d01daafabc/src/rc_gui.c#L52
+#   - Blog about raspi-config nonint commands
+#     - https://loganmarchione.com/2021/07/raspi-configs-mostly-undocumented-non-interactive-mode/
 
 # Colored output.
 RED="\e[1;31m"
@@ -12,14 +20,17 @@ BLUE="\e[0;34m"
 # Swap file path on RaspberryPi OS.
 SWAP_FILE=/etc/dphys-swapfile
 
-# Platform architecture
+# Platform Info
 ARCH=$(uname -m)
+CUR_GPU_MEM=$(sudo raspi-config nonint get_config_var gpu_mem /boot/config.txt)
+REQ_GPU_MEM=256
 
 OPENCV_VER="4.6.0"
 
 do_print_welcome=true
 do_update=false
 do_ask_reboot=true
+reboot_required=false
 
 usage()
 {
@@ -129,22 +140,39 @@ done
 }
 
 # Update bootloader.
-printf "$GREEN==> Updating bootloader...$NORM\n"
-sudo rpi-eeprom-update -a
+if [ "$(rpi-eeprom-update | grep 'BOOTLOADER: up to date')" = "" ]; then
+  printf "$GREEN==> Updating bootloader...$NORM\n"
+  sudo rpi-eeprom-update -a || exit_msg "Failed rpi-eeprom-update"
+  reboot_required=true
+else
+  printf "$GREEN==> Bootloader up to date!$NORM\n"
+fi
 
 # Bring gpu memory up to 256MB.
-printf "$GREEN==> Increasing gpu memory...$NORM\n"
-sudo sed -i /boot/config.txt -e s'/gpu_mem=.*/gpu_mem=256/'
+if [ $CUR_GPU_MEM != $REQ_GPU_MEM ]; then
+  printf "$GREEN==> Increasing gpu memory to $REQ_GPU_MEM...$NORM\n"
+  sudo raspi-config nonint do_memory_split $REQ_GPU_MEM || exit_msg "Failed raspi-config do_memory_split"
+  reboot_required=true
+else
+  printf "$GREEN==> Gpu memory already set at ${REQ_GPU_MEM}!$NORM\n"
+fi
 
 # Increasing swap size.
 printf "$GREEN==> Increasing swap size...$NORM\n"
 # storing the original swap size for later restore
 orig_swap=$(awk -F'=' '/CONF_SWAPSIZE=/ {print $2}' $SWAP_FILE)
-sudo sed -i $SWAP_FILE -e s'/CONF_SWAPSIZE=.*/CONF_SWAPSIZE=4096/'
+sudo sed -i $SWAP_FILE -e s'/CONF_SWAPSIZE=.*/CONF_SWAPSIZE=4096/' || exit_msg "Failed to edit $SWAP_FILE"
 sudo /etc/init.d/dphys-swapfile restart
 
 # Enable legacy camera support with raspi-config in non-interactive mode.
-sudo raspi-config nonint do_legacy 0
+if [ "$(sudo raspi-config nonint get_legacy)" != 0 ];
+then
+  printf "$GREEN==> Setting raspi-config legacy mode$NORM\n"
+  sudo raspi-config nonint do_legacy 0 || exit_msg "Failed setting raspi-config legacy mode"
+  reboot_required=true
+else
+    printf "$GREEN==> raspi-config legacy mode already set!$NORM\n"
+fi
 
 # Install all dependencies with apt-get.
 printf "$GREEN==> Installing dependencies...$NORM\n"
@@ -193,7 +221,7 @@ if [ ! -d "opencv" ]; then
   mv opencv-$OPENCV_VER opencv
   rm opencv.zip
 else
-  printf "$GREEN==> OpenCV $OPENCV_VER already downloaded. Skipping.$NORM\n"
+  printf "$GREEN==> OpenCV $OPENCV_VER already downloaded! Skipping.$NORM\n"
 fi
 
 # Dowload OpenCV Contrib
@@ -204,7 +232,7 @@ if [ ! -d "opencv_contrib" ]; then
   mv opencv_contrib-$OPENCV_VER opencv_contrib
   rm opencv_contrib.zip
 else
-  printf "$GREEN==> OpenCV Contrib $OPENCV_VER already downloaded. Skipping.$NORM\n"
+  printf "$GREEN==> OpenCV Contrib $OPENCV_VER already downloaded! Skipping.$NORM\n"
 fi
 
 # create the build directory
@@ -257,16 +285,18 @@ cmake \
 -DENABLE_PYLINT=OFF \
 -DENABLE_FLAKE8=OFF \
 -DENABLE_ZLIB=ON \
+-DBUILD_PROTOBUF=OFF \
+-DWITH_PROTOBUF=ON \
 ..
 [ "$?" != 0 ] && exit_msg "Failed cmake"
 
-# Run make (compile) using all 4 cores.
-make -j4
+# Run make (compile) using num cores
+make -j4 || exit_msg "Failed make"
 
 # Install OpenCV 4.6.0
 printf "$GREEN==> Installing OpenCV v4.6.0...$NORM\n"
-sudo make install
-sudo ldconfig
+sudo make install || exit_msg "Failed make install"
+sudo ldconfig || exit_msg "Failed ldconfig"
 
 # changing cwd back to $HOME
 cd $CWD
@@ -279,11 +309,13 @@ command -v cargo > /dev/null || {
 
 # Restoring swap size
 printf "$GREEN==> Restoring swap size...$NORM"
-sudo sed -i $SWAP_FILE -e s"/CONF_SWAPSIZE=.*/CONF_SWAPSIZE=$orig_swap/"
+sudo sed -i $SWAP_FILE -e s"/CONF_SWAPSIZE=.*/CONF_SWAPSIZE=$orig_swap/" || exit_msg "Failed to restore swap size in $SWAP_FILE"
 sudo /etc/init.d/dphys-swapfile restart
 
 # Check if binary is installed successfully & greet if so.
 greet
 
-# Ask for reboot unless -r option specified.
-[ $do_ask_reboot = true ] && ask_reboot
+
+if [ -d /var/run/reboot-required | reboot_required ]; then
+  [ $do ask_reboot ] && ask_reboot || systemctl reboot
+fi
