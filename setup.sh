@@ -181,7 +181,9 @@ sudo apt-get install -y \
   libprotobuf-dev \
   libgoogle-glog-dev \
   libgflags-dev \
-  protobuf-compiler
+  protobuf-compiler \
+  libtiff-dev \
+  libtiffxx5
 
 # Download OpenCV
 if [ ! -d "opencv" ]; then
@@ -218,7 +220,7 @@ cmake \
 -DOPENCV_EXTRA_MODULES_PATH=../../opencv_contrib/modules \
 -DCPU_BASELINE=NEON \
 -DENABLE_NEON=ON \
--DENABLE_VFPV3=ON \
+-DENABLE_VFPV3=$([ $ARCH = aarch64 ] && echo OFF || echo ON) \
 -DWITH_OPENMP=ON \
 -DWITH_OPENCL=OFF \
 -DBUILD_TIFF=ON \
@@ -228,7 +230,7 @@ cmake \
 -DWITH_GSTREAMER=ON \
 -DBUILD_TESTS=OFF \
 -DWITH_EIGEN=OFF \
--DWITH_V4L=ON \
+-DWITH_V4L=OFF \
 -DWITH_LIBV4L=ON \
 -DWITH_VTK=OFF \
 -DWITH_QT=OFF \
