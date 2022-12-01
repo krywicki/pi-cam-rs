@@ -285,13 +285,12 @@ cmake \
 -DENABLE_PYLINT=OFF \
 -DENABLE_FLAKE8=OFF \
 -DENABLE_ZLIB=ON \
--DBUILD_PROTOBUF=OFF \
 -DWITH_PROTOBUF=ON \
 ..
 [ "$?" != 0 ] && exit_msg "Failed cmake"
 
 # Run make (compile) using num cores
-make -j4 || exit_msg "Failed make"
+make -j2 || exit_msg "Failed make"
 
 # Install OpenCV 4.6.0
 printf "$GREEN==> Installing OpenCV v4.6.0...$NORM\n"
@@ -316,6 +315,6 @@ sudo /etc/init.d/dphys-swapfile restart
 greet
 
 
-if [ -d /var/run/reboot-required | reboot_required ]; then
+if [ -d /var/run/reboot-required ] || [ "$reboot_required" = true ]; then
   [ $do ask_reboot ] && ask_reboot || systemctl reboot
 fi
