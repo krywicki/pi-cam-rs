@@ -63,9 +63,9 @@ fn run(args: &cli::Args) -> Result<()> {
         let props: Vector<i32> = Vector::from_slice(&[
             videoio::CAP_PROP_FRAME_WIDTH, 640,
             videoio::CAP_PROP_FRAME_HEIGHT, 480,
-            videoio::CAP_PROP_FPS, 10
+            videoio::CAP_PROP_FPS, 15
         ]);
-        let mut cam = videoio::VideoCapture::new_with_params(args.video_device, videoio::CAP_UEYE, &props)?;
+        let mut cam = videoio::VideoCapture::new_with_params(args.video_device, videoio::CAP_V4L2, &props)?;
     }
 
     let opened = videoio::VideoCapture::is_opened(&cam)?;

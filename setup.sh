@@ -211,7 +211,7 @@ sudo apt-get install -y \
   libgflags-dev \
   protobuf-compiler \
   libtiff-dev \
-  libtiffxx5 \ 
+  libtiffxx5 \
   gstreamer1.0-tools
 
 # Download OpenCV
@@ -259,8 +259,7 @@ cmake \
 -DWITH_GSTREAMER=ON \
 -DBUILD_TESTS=OFF \
 -DWITH_EIGEN=OFF \
--DWITH_V4L=OFF \
--DWITH_LIBV4L=ON \
+-DWITH_V4L=ON \
 -DWITH_VTK=OFF \
 -DWITH_QT=OFF \
 -DWITH_GTK=OFF \
@@ -308,7 +307,7 @@ command -v cargo > /dev/null || {
 }
 
 # Restoring swap size
-printf "$GREEN==> Restoring swap size...$NORM"
+printf "$GREEN==> Restoring swap size...$NORM\n"
 sudo sed -i $SWAP_FILE -e s"/CONF_SWAPSIZE=.*/CONF_SWAPSIZE=$orig_swap/" || exit_msg "Failed to restore swap size in $SWAP_FILE"
 sudo /etc/init.d/dphys-swapfile restart
 
