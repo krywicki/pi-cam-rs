@@ -1,8 +1,8 @@
 [package]
+authors = ["Joe Krywicki"]
 name = "pi-cam-rs"
 version = "0.1.0"
 edition = "2021"
-
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 #[env]
@@ -10,5 +10,6 @@ edition = "2021"
 #PKG_CONFIG_PATH="/usr/local/lib/arm-linux-gnueabihf/pkgconfig"
 
 [dependencies]
-opencv = {version="0.71.0", features=["default"]}
+opencv = { version = "0.71.0", features = ["default"] }
 chrono = "0.4.22"
+clap = { version = "4.0.29", features = ["derive"] }

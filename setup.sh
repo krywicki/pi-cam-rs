@@ -211,7 +211,8 @@ sudo apt-get install -y \
   libgflags-dev \
   protobuf-compiler \
   libtiff-dev \
-  libtiffxx5
+  libtiffxx5 \ 
+  gstreamer1.0-tools
 
 # Download OpenCV
 if [ ! -d "opencv" ]; then

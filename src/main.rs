@@ -1,3 +1,4 @@
+use clap::Parser;
 use opencv::{
     core::{Size, Vector},
     dnn, imgcodecs,
@@ -8,28 +9,65 @@ use opencv::{
 
 use chrono::Utc;
 
+mod cli;
+
 fn main() -> Result<()> {
-    // let window = "video capture";
-    // highgui::named_window(window, highgui::WINDOW_AUTOSIZE)?;
+    let args = cli::Args::parse();
+
+    if args.list_camera_backends || args.list_backends {
+        list_backends(&args)?;
+    } else {
+        run(&args)?;
+    }
+
+    Ok(())
+}
+
+fn list_backends(args: &cli::Args) -> Result<()> {
+    if args.list_camera_backends {
+        let apis = videoio::get_camera_backends()?;
+
+        println!("{}", "Availabe Camera Backends");
+        println!("{}", "-".repeat(10));
+        for api in apis {
+            println!("\t{}", videoio::get_backend_name(api)?);
+        }
+        println!();
+    }
+
+    if args.list_backends {
+        let apis = videoio::get_backends()?;
+
+        println!("{}", "All Backends");
+        println!("{}", "-".repeat(10));
+        for api in apis {
+            println!("\t{}", videoio::get_backend_name(api)?);
+        }
+        println!();
+    }
+
+    Ok(())
+}
+
+fn run(args: &cli::Args) -> Result<()> {
+    println!("video device: {}", args.video_device);
+
     opencv::opencv_branch_32! {
         let mut cam = videoio::VideoCapture::new_default(0)?; // 0 is the default camera
         println!("opencv_branch_32");
     }
+
     opencv::not_opencv_branch_32! {
         println!("not_opencv_branch_32");
         //let mut cam = videoio::VideoCapture::new(0, videoio::CAP_ANY)?; // 0 is the default camera
         let props: Vector<i32> = Vector::from_slice(&[
             videoio::CAP_PROP_FRAME_WIDTH, 640,
             videoio::CAP_PROP_FRAME_HEIGHT, 480,
-            videoio::CAP_PROP_FPS, 30
+            videoio::CAP_PROP_FPS, 10
         ]);
-        let mut cam = videoio::VideoCapture::new_with_params(0i32, videoio::CAP_V4L2, &props)?;
-
+        let mut cam = videoio::VideoCapture::new_with_params(args.video_device, videoio::CAP_UEYE, &props)?;
     }
 
-    // let streams = Vector::from_slice(&[cam]);
-    // let mut ready: Vector<i32> = Vector::new();
-    // videoio::VideoCapture::wait_any(&streams, &mut ready, 1000000);
     let opened = videoio::VideoCapture::is_opened(&cam)?;
     if !opened {
         panic!("Unable to open default camera!");
@@ -107,21 +145,4 @@ fn main() -> Result<()> {
     }
 
     Ok(())
-}
-
-#[derive(Debug)]
-pub enum Codec {
-    MJPG,
-    XVID,
-    MP4V,
-    H264,
-}
-
-fn fourcc(codec: Codec) -> Result<i32> {
-    match codec {
-        Codec::H264 => videoio::VideoWriter::fourcc('h', '2', '6', '4'),
-        Codec::XVID => videoio::VideoWriter::fourcc('x', 'v', 'i', 'd'),
-        Codec::MP4V => videoio::VideoWriter::fourcc('m', 'p', '4', 'v'),
-        Codec::MJPG => videoio::VideoWriter::fourcc('m', 'j', 'p', 'g'),
-    }
 }
